@@ -31,19 +31,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(() => {
-    return localStorage.getItem("gacha_is_admin") === "true";
-  });
-
-  // const login = (pass: string) => {
-  //   if (pass.toLowerCase() === "santa123") {
-  //     setIsAdmin(true);
-  //     localStorage.setItem("gacha_is_admin", "true");
-  //     return true;
-  //   }
-  //   return false;
-  // };
-
   return (
     <HashRouter>
       <Layout>

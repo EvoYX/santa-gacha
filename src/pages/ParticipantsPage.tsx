@@ -456,7 +456,7 @@ const ParticipantsPage: React.FC = () => {
             {stats.claimed}
           </span>
           <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">
-            Gifted
+            Drawed
           </span>
         </div>
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
