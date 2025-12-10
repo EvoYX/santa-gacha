@@ -1,150 +1,162 @@
-// ------------------------------------------------------------------
-// 1. PASTE YOUR MOCKAPI URL INSIDE THE QUOTES BELOW
-//    It should look like: "https://670b3...mockapi.io/participants"
+// ============================================================================
+// CONFIGURATION
 
-// ------------------------------------------------------------------
-// 1. PASTE YOUR MOCKAPI URL INSIDE THE QUOTES BELOW
-//    It should look like: "https://670b3...mockapi.io/participants"
-import type { Participant } from "../types";
+import { Participant } from "../types";
 
-// ------------------------------------------------------------------
-const API_URL = "https://6938552f4618a71d77cfecbc.mockapi.io/participants";
+// ============================================================================
+const BASE_URL = "https://6938552f4618a71d77cfecbc.mockapi.io";
 
-const STORAGE_KEY = "gacha_participants_local";
-const SETTINGS_KEY = "gacha_settings_local";
-
-// Helper to simulate network delay for local storage
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Helper for generating IDs locally
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
-// Safe JSON parse helper
-const safeParse = (json: string | null): any => {
-  if (!json) return null;
-  try {
-    return JSON.parse(json);
-  } catch (e) {
-    console.error("Failed to parse local storage", e);
-    return null;
-  }
+// Helper for Fetch Wrappers
+const getEndpoint = (resource: "participants" | "settings") => {
+  return `${BASE_URL}/${resource}`;
 };
 
+// --- SETTINGS API ---
 export const getSettings = async (): Promise<{
+  id?: string;
   targetCount: number;
   eventSummary: string;
 }> => {
-  // Settings usually stay local for the admin, but could be moved to API if needed.
-  // For now, we keep them local to avoid complex API structures.
-  await delay(100);
-  const data = safeParse(localStorage.getItem(SETTINGS_KEY));
-  return {
-    targetCount: data?.targetCount ?? 5,
-    eventSummary:
-      data?.eventSummary ??
-      "Welcome to our Holiday Gift Exchange! Please enter your name and what you'd like to receive.",
-  };
+  try {
+    const res = await fetch(getEndpoint("settings"));
+    // If the 'settings' resource doesn't exist in MockAPI (returns 404), throw to catch block
+    if (!res.ok) throw new Error("Settings resource not found or fetch failed");
+
+    const data = await res.json();
+
+    // If settings resource exists but is empty array, try to initialize it
+    if (Array.isArray(data) && data.length === 0) {
+      const initial = {
+        targetCount: 5,
+        eventSummary: "Welcome! Join our Gift Exchange.",
+      };
+      // Attempt to create it, but don't crash if it fails
+      fetch(getEndpoint("settings"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(initial),
+      }).catch((e) => console.warn("Could not init settings", e));
+
+      return initial;
+    }
+
+    // MockAPI returns an array, we take the first item
+    return Array.isArray(data) ? data[0] : data;
+  } catch (error) {
+    // Graceful fallback: Use default settings so the app still works
+    console.warn(
+      "Using default settings (Backend might be missing 'settings' resource):",
+      error
+    );
+    return { targetCount: 5, eventSummary: "Welcome! Join our Gift Exchange." };
+  }
 };
 
 export const updateSettings = async (
   targetCount: number,
   eventSummary: string
 ): Promise<void> => {
-  await delay(100);
-  localStorage.setItem(
-    SETTINGS_KEY,
-    JSON.stringify({ targetCount, eventSummary })
-  );
+  try {
+    const current = await getSettings();
+    // If we are using defaults (no ID), we can't update properly unless we create first
+    if (!current.id) return;
+
+    await fetch(`${getEndpoint("settings")}/${current.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetCount, eventSummary }),
+    });
+  } catch (e) {
+    console.error("Failed to update settings", e);
+  }
 };
 
+// --- PARTICIPANTS API ---
+
 export const getParticipants = async (): Promise<Participant[]> => {
-  if (API_URL) {
-    const res = await fetch(API_URL);
+  try {
+    const res = await fetch(getEndpoint("participants"));
     if (!res.ok) throw new Error("Failed to fetch participants");
     const data = await res.json();
-    // MockAPI sometimes saves booleans as strings "true"/"false", so we sanitize it here
     return data.map((p: any) => ({
       ...p,
       isClaimed: p.isClaimed === true || p.isClaimed === "true",
+      drawnMatchId: p.drawnMatchId || null,
+      pin: p.pin || "0000",
     }));
-  } else {
-    await delay(300);
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const parsed = safeParse(stored);
-    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn("API Error (Participants). Returning empty list.", error);
+    return [];
   }
 };
 
 export const addParticipant = async (
   name: string,
-  wishlist: string
+  wishlist: string,
+  pin: string
 ): Promise<Participant> => {
-  if (API_URL) {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, wishlist, isClaimed: false }),
-    });
-    if (!res.ok) throw new Error("Failed to add participant");
-    return res.json();
-  } else {
-    await delay(300);
-    const list = await getParticipants();
-    const newP: Participant = {
-      id: generateId(),
-      name,
-      wishlist,
-      isClaimed: false,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...list, newP]));
-    return newP;
-  }
+  const newP = { name, wishlist, pin, isClaimed: false, drawnMatchId: null };
+
+  const res = await fetch(getEndpoint("participants"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(newP),
+  });
+  if (!res.ok) throw new Error("Failed to add participant");
+  return res.json();
 };
 
 export const deleteParticipant = async (id: string): Promise<void> => {
-  if (API_URL) {
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Failed to delete participant");
-  } else {
-    await delay(300);
-    const list = await getParticipants();
-    const updated = list.filter((p) => p.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
+  const res = await fetch(`${getEndpoint("participants")}/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete participant");
 };
 
 export const toggleClaim = async (
   id: string,
   isClaimed: boolean
 ): Promise<Participant> => {
-  if (API_URL) {
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isClaimed }),
-    });
-    if (!res.ok) throw new Error("Failed to update participant");
-    return res.json();
-  } else {
-    await delay(300);
-    const list = await getParticipants();
-    const index = list.findIndex((p) => p.id === id);
-    if (index === -1) throw new Error("Participant not found");
-
-    list[index].isClaimed = isClaimed;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    return list[index];
-  }
+  const res = await fetch(`${getEndpoint("participants")}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isClaimed }),
+  });
+  if (!res.ok) throw new Error("Failed to update participant");
+  return res.json();
 };
 
-export const drawRandomUnclaimed = async (): Promise<Participant | null> => {
+export const recordDraw = async (
+  pickerId: string,
+  drawnId: string
+): Promise<void> => {
+  await fetch(`${getEndpoint("participants")}/${pickerId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ drawnMatchId: drawnId }),
+  });
+};
+
+export const drawRandomUnclaimed = async (
+  excludeId: string
+): Promise<Participant | null> => {
   const all = await getParticipants();
-  const unclaimed = all.filter((p) => !p.isClaimed);
+  const valid = all.filter((p) => !p.isClaimed && p.id !== excludeId);
 
-  if (unclaimed.length === 0) return null;
+  if (valid.length === 0) return null;
 
-  const randomIndex = Math.floor(Math.random() * unclaimed.length);
-  return unclaimed[randomIndex];
+  const randomIndex = Math.floor(Math.random() * valid.length);
+  return valid[randomIndex];
+};
+
+export const getParticipantById = async (
+  id: string
+): Promise<Participant | null> => {
+  try {
+    const res = await fetch(`${getEndpoint("participants")}/${id}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (e) {
+    return null;
+  }
 };

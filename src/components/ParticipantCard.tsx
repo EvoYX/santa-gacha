@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
+import { Participant } from "../types";
 import { Card, CardContent } from "./ui";
 import {
   TrashIcon,
   CheckCircleIcon,
   XCircleIcon,
   GiftIcon,
+  LockClosedIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
-import type { Participant } from "../types";
 
 interface ParticipantCardProps {
   participant: Participant;
@@ -20,6 +22,8 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
   onDelete,
   onToggleClaim,
 }) => {
+  const [showPin, setShowPin] = useState(false);
+
   return (
     <motion.div
       layout
@@ -55,15 +59,35 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
                 >
                   {participant.name}
                 </h3>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full inline-block mt-1 ${
-                    participant.isClaimed
-                      ? "bg-green-100 text-green-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  {participant.isClaimed ? "Claimed" : "Waiting"}
-                </span>
+                <div className="flex gap-2 mt-1">
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full inline-block ${
+                      participant.isClaimed
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {participant.isClaimed ? "Claimed" : "Waiting"}
+                  </span>
+
+                  {/* CLICK TO REVEAL PIN */}
+                  <button
+                    onClick={() => setShowPin(!showPin)}
+                    className={`text-xs px-2 py-0.5 rounded-full inline-flex items-center font-mono tracking-wide cursor-pointer transition-colors ${
+                      showPin
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
+                    title={showPin ? "Hide PIN" : "Show PIN"}
+                  >
+                    {showPin ? (
+                      <EyeIcon className="w-3 h-3 mr-1" />
+                    ) : (
+                      <LockClosedIcon className="w-3 h-3 mr-1" />
+                    )}
+                    {showPin ? participant.pin : "••••"}
+                  </button>
+                </div>
               </div>
             </div>
 

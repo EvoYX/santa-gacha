@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createContext, useState } from "react";
 import {
   HashRouter,
   Routes,
@@ -12,6 +12,7 @@ import GachaPage from "./pages/GachaPage";
 import JoinPage from "./pages/JoinPage";
 
 import "./App.css";
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   // Hide navbar on the Join page to keep it simple for guests
@@ -30,11 +31,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function App() {
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return localStorage.getItem("gacha_is_admin") === "true";
+  });
+
+  // const login = (pass: string) => {
+  //   if (pass.toLowerCase() === "santa123") {
+  //     setIsAdmin(true);
+  //     localStorage.setItem("gacha_is_admin", "true");
+  //     return true;
+  //   }
+  //   return false;
+  // };
+
   return (
     <HashRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<Navigate to="/participants" replace />} />
+          <Route path="/" element={<Navigate to="/gacha" replace />} />
           <Route path="/participants" element={<ParticipantsPage />} />
           <Route path="/gacha" element={<GachaPage />} />
           <Route path="/join" element={<JoinPage />} />

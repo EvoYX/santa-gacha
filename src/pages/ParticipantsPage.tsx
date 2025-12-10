@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Participant, DrawState } from "../types";
 import { ParticipantCard } from "../components/ParticipantCard";
 import {
   Button,
@@ -27,9 +28,8 @@ import {
   deleteParticipant,
   toggleClaim,
 } from "../apis/api";
-import type { Participant, DrawState } from "../types";
 
-// Duplicate PrizeReveal for simulator (could be extracted to components/PrizeReveal.tsx)
+// Duplicate PrizeReveal for simulator
 const SimPrizeReveal = ({
   participant,
   onReset,
@@ -170,8 +170,6 @@ const ParticipantsPage: React.FC = () => {
     const link = getInviteLink();
     const subject = "You are invited to the Gift Exchange!";
     const body = `${inviteMessage}\n\nJoin here:\n${link}`;
-
-    // This opens the user's default email client with everything pre-filled
     window.location.href = `mailto:${inviteEmail}?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(body)}`;
@@ -203,10 +201,6 @@ const ParticipantsPage: React.FC = () => {
 
   // --- SIMULATION LOGIC ---
   const handleSimulateDraw = async () => {
-    // Determine the pool of participants for simulation
-    // If we have real participants, use them (even if claimed, just for the test)
-    // If we have NO participants, generate dummy ones so the user can see the animation.
-
     let simPool = participants;
     if (simPool.length === 0) {
       simPool = [
@@ -215,54 +209,35 @@ const ParticipantsPage: React.FC = () => {
           name: "Rudolph Rednose",
           wishlist: "Nose Polish",
           isClaimed: false,
+          pin: "0000",
         },
         {
           id: "sim-2",
           name: "Frosty Snowman",
           wishlist: "Magic Hat",
           isClaimed: false,
+          pin: "0000",
         },
         {
           id: "sim-3",
           name: "Buddy The Elf",
           wishlist: "Maple Syrup",
           isClaimed: false,
-        },
-        {
-          id: "sim-4",
-          name: "Grinch",
-          wishlist: "Heart Medicine",
-          isClaimed: false,
-        },
-        {
-          id: "sim-5",
-          name: "Scrooge",
-          wishlist: "Gold Coins",
-          isClaimed: false,
+          pin: "0000",
         },
       ];
     }
-
     const names = simPool.map((p) => p.name);
-
     setSimState("drawing");
-
-    // Rolling Animation
     const interval = setInterval(() => {
       const random = names[Math.floor(Math.random() * names.length)];
       setSimRollingName(random);
     }, 80);
-
-    // Simulate delay
     await new Promise((resolve) => setTimeout(resolve, 3000));
     clearInterval(interval);
-
     try {
-      // Force a win from the pool for simulation purposes
       const winner = simPool[Math.floor(Math.random() * simPool.length)];
-
       setSimResult(winner);
-      // CRITICAL: We do NOT call toggleClaim(true) for sim.
       setSimState("dropped");
     } catch (e) {
       console.error(e);
@@ -288,19 +263,20 @@ const ParticipantsPage: React.FC = () => {
     remaining: participants.filter((p) => !p.isClaimed).length,
   };
 
+  // --- DASHBOARD VIEW ---
   return (
-    <div className="max-w-4xl mx-auto pb-24 space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="max-w-5xl mx-auto pt-8 px-4 pb-28 space-y-8 w-full">
+      {/* Header Section: Centered on mobile, Flex row on desktop */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 text-center md:text-left">
         <div>
           <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight drop-shadow-sm">
             <span className="text-secondary">Secret</span>{" "}
             <span className="text-primary">Santa</span>
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">Admin Dashboard</p>
+          <p className="text-slate-500 mt-2 font-medium">Dashboard</p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center md:justify-end gap-2">
           <Button
             variant="outline"
             onClick={() => setShowSimulator(true)}
@@ -445,9 +421,11 @@ const ParticipantsPage: React.FC = () => {
                       className="resize-none"
                     />
                   </div>
-                  <Button type="submit" className="w-full sm:w-auto">
-                    Save Changes
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <Button type="submit" className="w-full sm:w-auto">
+                      Save Changes
+                    </Button>
+                  </div>
                 </form>
               </CardContent>
             </Card>
@@ -497,18 +475,19 @@ const ParticipantsPage: React.FC = () => {
           Loading participants...
         </div>
       ) : (
-        <motion.div
-          layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
+        <motion.div layout className="flex flex-wrap justify-center gap-4">
           <AnimatePresence>
             {participants.map((p) => (
-              <ParticipantCard
+              <div
                 key={p.id}
-                participant={p}
-                onDelete={handleDelete}
-                onToggleClaim={handleToggle}
-              />
+                className="w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.33%-0.7rem)]"
+              >
+                <ParticipantCard
+                  participant={p}
+                  onDelete={handleDelete}
+                  onToggleClaim={handleToggle}
+                />
+              </div>
             ))}
           </AnimatePresence>
         </motion.div>
