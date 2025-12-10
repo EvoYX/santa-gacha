@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# 🎄 Santa Gacha - Secret Santa App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A festive, animated web application for managing Secret Santa gift exchanges. Participants join via a link, add their wishlist, and then use a virtual Gacha machine to draw their match!
 
-Currently, two official plugins are available:
+## 🚀 Quick Start Guide
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 1. The Host (Admin Dashboard)
 
-## React Compiler
+- **URL:** `/#/participants`
+- **Purpose:** This is your control center.
+- **What to do here:**
+  1.  Check the **Stats** (how many people joined).
+  2.  Open **Settings** to set the **Target Count** (the machine stays locked until this number is reached).
+  3.  Click the **"Invite"** or **"Copy Link"** button to send the join link to your group chat (WhatsApp, Telegram, etc.).
+  4.  You can also **Simulate** the draw to test the machine animation.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. The Guests (Joining)
 
-## Expanding the ESLint configuration
+- **URL:** `/#/join` (This is the link you copy from the Admin page)
+- **Purpose:** For friends to sign up.
+- **Action:**
+  1.  Enter **Name**.
+  2.  Enter **Wishlist** (e.g., "I like sci-fi books").
+  3.  **Crucial:** Create a **4-digit PIN**. (They need this PIN to unlock their result later!).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 3. The Main Event (Gacha Draw)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **URL:** `/#/gacha`
+- **Purpose:** The fun part!
+- **Action:**
+  1.  Once the target count is reached, the workshop unlocks.
+  2.  Select your **Name** from the list.
+  3.  Enter your **PIN** to verify identity.
+  4.  Turn the knob to spin the machine and reveal your Secret Santa match!
+  5.  The result is saved privately; you can log in again later to view it.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🛠 Setup & Deployment
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 1. Backend (MockAPI)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+This app uses a free MockAPI backend to store data.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Go to [mockapi.io](https://mockapi.io) and create a project.
+2. Create two resources:
+   - **participants** (Fields: `name`, `wishlist`, `pin`, `isClaimed` (boolean), `drawnMatchId`)
+   - **settings** (Fields: `targetCount` (number), `eventSummary`)
+3. Copy your API Endpoint URL (e.g., `https://670b...mockapi.io/api/v1`).
+
+### 2. Deployment (Vercel)
+
+1. Import this repository to Vercel.
+2. Go to **Settings > Environment Variables**.
+3. Add `VITE_API_URL` with your MockAPI URL as the value.
+4. **Important:** Go to **Deployment Protection** and disable "Vercel Authentication" so your friends can access it without logging in.
+
+---
+
+## 📂 Project Structure
+
+- **`/pages/ParticipantsPage`**: Admin dashboard and list view.
+- **`/pages/JoinPage`**: Form for adding new users.
+- **`/pages/GachaPage`**: The animated simulator and draw logic.
+- **`/components/ArcadeMachine`**: The core CSS/Framer Motion animation component.
+- **`api.ts`**: Handles connection to MockAPI.
+
+## 🎨 Credits
+
+Built with React, Tailwind CSS, Framer Motion, and HeroIcons.
